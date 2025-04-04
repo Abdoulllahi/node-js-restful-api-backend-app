@@ -1,4 +1,5 @@
 var http = require('http');
+var url = require('url');
 const itemsJson = require('./items.json')
 
 http.createServer(function (request, response) {
@@ -16,12 +17,14 @@ http.createServer(function (request, response) {
         response.end();
         console.log("GET: returned");
         console.log(itemsJson);
+
+        var parsed = url.parse(request.url, true);
     }
 
     if (request.method === 'PUT') {
 
-        var newItemName = request.query.newItemName;
-        var newItemPrice = request.query.newItemPrice;
+        var newItemName = parsed.query.newItemName;
+        var newItemPrice = parsed.query.newItemPrice;
 
         if (!newItemName) {
             console.log('PUT: newItemName is invalid');
@@ -39,6 +42,27 @@ http.createServer(function (request, response) {
         itemsJson.push({ "id": newId, "name": newItemName, "price": newItemPrice });
         response.statusCode = 200;
         response.end()
+    }
+
+    if (request.method === 'POST') {
+
+        var itemId = parsed.query.id;
+        var newItemName = parsed.query.newItemName;
+
+        if (!newItemName) {
+            console.log('POST: newItemName is invalid');
+            response.statusCode = 404;
+            response.end();
+        }
+
+        var jsonIndex = itemsJson.findIndex(item => item.id === itemId);
+
+        if (jsonIndex >= 0) {
+            itemsJson[jsonIndex].name = newItemName;
+            response.statusCode = 200;
+        } else response.statusCode = 404;
+
+        response.end();
     }
 
 }).listen(3000, function () {
